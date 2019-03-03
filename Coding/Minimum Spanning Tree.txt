@@ -1,0 +1,159 @@
+#include<iostream>
+#include<queue>
+#define ep 2
+using namespace std;
+const float maxValue = 10000000;
+template<class T>
+void get (T &x);
+template<class T>
+void put (T x);
+class UFSets
+{
+public:
+    UFSets (int sz)
+    {
+        size = sz;
+        parent = new int[size + 10];
+        for (int i = 0; i < size; i++)
+        {
+            parent[i] = -1;
+        }
+    }
+    UFSets () { delete[]parent; }
+    UFSets& operator=(UFSets &R);
+    void Union (int Root1, int Root2);
+    void Union1 (int Root1, int Root2);
+    int Find (int x);
+    int CollapFind (int x);
+    void WeightedUnion (int Root1, int Root2);
+    int setnum ()
+    {
+        int flag = 0;
+        for (int i = 0; i < size; i++)
+        {
+            if (parent[i] < 0)flag++;
+        }
+        return flag;
+    }
+    int minedgenum ()
+    {
+        int t = 0;
+        for (int i = 0; i < size; i++)
+        {
+            if (parent[i] < 0)t += -parent[i] - 1;
+        }
+        return t;
+    }
+    int *parent;
+    int size;
+};
+int UFSets::Find (int x)
+{
+    while (parent[x] >= 0)x = parent[x];
+    return x;
+}
+int UFSets::CollapFind (int x)
+{
+    int p = x, m;
+    while (parent[p] >= 0)p = parent[p];
+    while (x != p)
+    {
+        m = parent[x];
+        parent[x] = p;
+        x = m;
+    }
+    return x;
+}
+void UFSets::Union (int Root1, int Root2)   //Root1为父结点，将Root2挂上去
+{
+    int pRoot1 = CollapFind (Root1), pRoot2 = CollapFind (Root2);
+    if (pRoot1 == pRoot2)return;
+    parent[pRoot2] = pRoot1;
+}
+void UFSets::Union1 (int Root1, int Root2)   //Root1为父结点，将Root2挂上去
+{
+    parent[Root2] = Root1;
+}
+//机器可表示的、问题中不可能出现的大数
+struct MSTEdgeNode
+{       //树边结点的类定义
+    int tail, head;         //两顶点位置
+    long long cost;             //边上的权值
+    MSTEdgeNode () : tail (-1), head (-1), cost (0) {}                      //构造函数      
+    MSTEdgeNode (int a, int b, long long c) : tail (a), head (b), cost (c) {}                       //构造函数          
+};
+class MinSpanTree
+{   //最小生成树的类定义
+public:
+    MSTEdgeNode *edgevalue;     //边值数组   
+    int maxSize, n;     //最大元素个数和当前个数
+    MinSpanTree (int sz) :maxSize (sz), n (0)
+    {
+        edgevalue = new MSTEdgeNode[sz];
+    }
+    int Insert (MSTEdgeNode& item)  //在树中插入一条边，返回边的坐标位置
+    {
+        if (n < maxSize)
+        {
+            edgevalue[n - 1] = item;
+            n++;
+            return n - 2;
+        }
+        else return -1;
+    }
+};
+struct cmp
+{
+    bool operator() (MSTEdgeNode a, MSTEdgeNode b)
+    {
+        return a.cost > b.cost;
+    }
+};             //堆的定义, bug！！！！！！！
+typedef priority_queue<MSTEdgeNode, vector<MSTEdgeNode>, cmp> minHeap;  //get a priority_queue  
+int main ()
+{
+    int n, m, u, v;
+    int u0 = 0, v0 = 0;
+    MSTEdgeNode ed;           //边结点辅助单元
+    long long w;
+    long long grossweight = 0;
+    long long maxweight = 0;
+    get<int> (n); get<int> (m);   //n is the num of islands, m is the num of the bridges
+    UFSets mysets (n);
+    int setnum = n;
+    for (int i = 0; i < m; i++)
+    {
+        get<int> (u); get<int> (v); get<long long> (w);
+        ed.tail = u - 1;  ed.head = v - 1;
+        ed.cost = w;
+        maxweight += w;     
+        //最小生成森林的下一步
+        int u0 = mysets.CollapFind (ed.tail);  v0 = mysets.CollapFind (ed.head);
+        //取两顶点所在集合的根u与v
+        if (u0 != v0)              //此法得到的weight正确
+        {                //不是同一集合,不连通
+            mysets.Union1 (u0, v0);     //合并,连通它们  
+            grossweight += ed.cost;
+            setnum--;
+        }
+        put<int> (setnum - 1);
+        put<long long> (maxweight - grossweight);
+        put<int> (1);
+        putchar ('\n');
+    }
+}
+template<class T>
+void get (T &x)
+{
+    char c = getchar (); x = 0;
+    while (c < '0' || c > '9') c = getchar ();
+    while (c <= '9' && c >= '0') x = x * 10 + c - 48, c = getchar ();
+}
+template<class T>
+void put (T x)
+{
+    int num = 0; char c[40];
+    do { c[++num] = (x % 10) + 48, x /= 10; } while (x);
+    while (num) putchar (c[num--]);
+    putchar (' ');
+}

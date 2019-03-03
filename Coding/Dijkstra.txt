@@ -1,0 +1,197 @@
+#include<iostream>
+#include<vector>
+#include<string>
+#include<queue>
+#include<cstdlib>
+#include<algorithm>
+#define maxsize 10000000
+using namespace std;
+//注意要从1开始计数！
+class Graph
+{
+public:
+    int NumberOfVertices () { return length*width; };
+    Graph (int n, int m) :length (n), width (m)
+    {
+        char t;
+    //  char a[26] = "000#00#0#0000#0##0#00#000";
+    //  int p = 0;
+        matrix.resize (length + 2);
+        for (int i = 0; i < length; i++)
+            matrix[i].resize (width + 2);
+        for (int i = 0; i < length; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                //t = a[p++];
+                cin >> t;
+                if (t == '#')
+                    matrix[i][j] = maxsize;
+                else
+                    matrix[i][j] = t - 48;
+            }
+        }
+    };
+    void showmatrix ()//存储正常
+    {
+        for (int i = 0; i < length; i++)
+        {
+            for (int j = 0; j < width; j++)
+            {
+                cout << matrix[i][j] << " ";
+            }
+            cout << endl;
+        }
+        cout << "--------------\n";
+    }
+    long long GetWeight (int x1, int y1, int x2, int y2)   //从x1y1到x2y2的权值,x1y1的权值不为maxsize
+    {
+        long long w1 = matrix[x1][y1], w2 = matrix[x2][y2];
+        //if (w1 >= maxsize) return maxsize;   //
+        if (w1 >= w2)
+        {
+            return 1;
+        }
+        else if (w1 < w2)
+        {
+            if (w2 == maxsize)
+                return maxsize;
+            else return  w2 - w1 + 1;
+        }
+    };
+    int length, width;
+    vector<vector<long long> > matrix;
+};
+struct point
+{
+    int cordx;
+    int cordy;
+    long long p;
+    point& operator=(const point& s)  //深层复制potential bug！！！！！！！！！！！！
+    {
+        cordx = s.cordx;
+        cordy = s.cordy;
+        p = s.p;
+        return *this;
+    }
+};
+struct cmp
+{
+    bool operator() (point a, point b)
+    {
+        return a.p > b.p;
+    }
+};             //堆的定义, bug！！！！！！！
+typedef priority_queue<point, vector<point>, cmp> minHeap;  //get a priority_queue  
+void ShortestPath (Graph& G, int vx, int vy, vector<vector<long long> >&dist)
+{
+    //Graph是一个带权有向图。dist[j], 0≤j<n, 是当前
+    //求到的从顶点v到顶点j的最短路径长度, path[j],
+    //0≤j<n, 存放求到的最短路径。
+    bool **S = new bool*[G.length + 2];        //最短路径顶点集
+    for (int i = 0; i < G.length; i++)
+    {
+        S[i] = new bool[G.width + 2];
+    }
+    long long w;
+    minHeap* hp = new minHeap;
+    for (int i = 0; i < G.length; i++)//初始化每个dist并放入堆
+        for (int j = 0; j < G.width; j++)
+        {
+            if (abs (vx - i) + abs (vy - j) == 1)
+            {
+                dist[i][j] = G.GetWeight (vx, vy, i, j);
+                point *myp = new point;
+                myp->cordx = i; myp->cordy = j; myp->p = dist[i][j];   //建立point
+                (*hp).push (*myp);
+            }
+            else
+                dist[i][j] = maxsize;
+            S[i][j] = false;
+        }
+    S[vx][vy] = true;
+    dist[vx][vy] = 0;       //顶点v加入顶点集合
+    point first;
+    for (int i = 0; i < G.length; i++)
+        for (int j = 0; j < G.width; j++)
+        {       //求解各顶点最短路径
+            
+            if (!hp->empty ())
+            {
+                while (!hp->empty () && S[hp->top ().cordx][hp->top ().cordy] == true)
+                {
+                    hp->pop ();
+                }
+                if (hp->empty ())return;
+                first = hp->top ();  //min element  
+                S[hp->top ().cordx][hp->top ().cordy] = true;
+                hp->pop ();
+            }
+            else return;
+            //小白版本
+            /*
+            while (true)
+            {
+                if (!S[(*hp).top ().cordx][(*hp).top ().cordy])
+                {
+                    S[(*hp).top ().cordx][(*hp).top ().cordy] = true;
+                    break;
+                }
+                (*hp).pop ();
+            }
+            first = (*hp).top ();
+            (*hp).pop ();
+            */
+            //普通版本
+            /*
+            if (!(*hp).empty ())
+            {
+                first = (*hp).top ();  //选出堆的最小元素，浅复制（可能会出错！）
+                S[(*hp).top ().cordx][(*hp).top ().cordy] = true;
+            }
+            if (!(*hp).empty ())(*hp).pop ();
+            */
+            for (int k = max (first.cordx - 1, 0); k <= min (first.cordx + 1, G.length - 1); k++)
+                for (int o = max (first.cordy - 1, 0); o <= min (first.cordy + 1, G.width - 1); o++)
+                {           //枚举检查修改
+                    if (abs (first.cordx - k) + abs (first.cordy - o) == 1)
+                    {
+                        w = G.GetWeight (first.cordx, first.cordy, k, o);
+                        if (!S[k][o] && w < maxsize && dist[first.cordx][first.cordy] + w < dist[k][o])
+                        {       //顶点k未加入S                
+                            dist[k][o] = dist[first.cordx][first.cordy] + w;   //每次一更新就让新point入堆
+                            point *myp1 = new point;
+                            myp1->cordx = k; myp1->cordy = o; myp1->p = dist[k][o];   //建立point
+                            (*hp).push (*myp1);
+                        }
+                    }
+                }
+        }
+    
+};  //总的时间复杂度为O(n2).  (对顶点n的两层循环)
+int main ()
+{
+    int n, m, fx, fy;
+    cin >> n >> m;
+    vector<vector<long long> >dist;    //dist数组的建立
+    dist.resize (n + 2);
+    for (int i = 0; i < n; i++)
+        dist[i].resize (m + 2);
+    Graph mygraph (n, m);
+    cin >> fx >> fy;
+    ShortestPath (mygraph, fx - 1, fy - 1, dist);
+    //mygraph.showmatrix ();
+    for (int i = 0; i < n; i++)  //输出dist数组结果
+    {
+        for (int j = 0; j < m; j++)
+        {
+            if (dist[i][j] == maxsize)
+            {
+                cout << -1 << ' ';
+                continue;
+            }
+            cout << dist[i][j] << ' ';
+        }
+        cout << endl;
+    }
+}

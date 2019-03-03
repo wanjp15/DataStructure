@@ -1,0 +1,202 @@
+#include <iostream>
+#include<math.h>
+#include<vector>
+#include<algorithm>
+using namespace std;
+int guass_elimination (double ** &, int, int);
+void exchange_row (double ** &, int, int);
+//bug1:parenthesis disorder
+//bug2:one modification can affect many parts of your code
+//bug3:usage of STL
+struct Trituple
+{
+    int row, col;
+    double value;
+};
+double find_value (vector<Trituple> array, int r, int c, int limit); //find the value from 1 to limit
+bool myf (Trituple a, Trituple b)
+{
+    return a.row < b.row;
+}
+int main ()
+{
+    int test_num, row_num;
+    char m_type;
+    static double *x0, *x;
+    cin >> test_num;
+    for (int testcase = 0; testcase < test_num; testcase++)
+    {
+        cin >> m_type;
+        switch (m_type)
+        {
+        case 'R':
+            double **R_matrix, *b;
+            int result;
+            cin >> row_num;
+            R_matrix = new double*[row_num];
+            b = new double[row_num];
+            x = new double[row_num];
+        /*  for (int i = 1; i <= row_num; i++)
+            {
+                x[i] = 1;
+            }*/
+            for (int i = 0; i < row_num; i++)    //创建矩阵R和常量b并输入数据
+            {
+                R_matrix[i] = new double[row_num+2];
+            }
+            for (int i = 0; i < row_num; i++)
+                for (int j = 0; j < row_num; j++)
+                {
+                    cin >> R_matrix[i][j];
+                }
+            for (int i = 0; i < row_num; i++)
+                cin >> R_matrix[i][row_num];
+            result = guass_elimination (R_matrix, row_num, row_num + 1);
+            if (result != 0)
+            {
+                cout << "0" << endl; continue;
+            }
+            
+            x[row_num - 1] = double (R_matrix[row_num - 1][row_num]) / R_matrix[row_num - 1][row_num - 1];
+            for (int k = row_num - 2; k >= 0; k--)
+            {
+                x[k] = R_matrix[k][row_num];
+                for (int m = row_num - 1; m > k; m--)
+                {
+                    x[k] = x[k] - x[m] * R_matrix[k][m];
+                }
+                x[k] = x[k] / R_matrix[k][k];
+            }
+            for (int k = 0; k < row_num; k++)
+                cout << x[k] <<" ";
+            cout << endl;
+            break;
+        case 'S':   //G迭代法+超松弛迭代法
+            int k, row, col, flag, w=1;
+            double d = 0, *b2, sum, temp0;
+            cin >> row_num >> k;
+            b2 = new double[row_num+1];
+            x0 = new double[row_num+1];
+            x = new double[row_num+1];
+            vector<Trituple> array(k+5);
+            for (int i = 1; i <= k; i++)
+            {
+                cin >> row >> col >> d;
+                array[i].row = row;
+                array[i].col = col;
+                array[i].value = d;
+            }
+            for (int i = 1; i <= row_num; i++)
+                cin >> b2[i];
+            for (int i = 1; i <= row_num; i++)
+            {
+                x0[i] = 0.164;
+                x[i] = 1;
+            }
+            sort (array.begin(), array.begin()+k+1, myf);  
+            /*for (int i = 1; i <= k; i++)
+                cout << array[i].row << " " << array[i].col << endl;*/
+        while (true)
+            {
+                flag = 0;
+                w = 1;
+                //计算过程
+                for (int i = 1; i <= row_num; i++)
+                {
+                    sum = 0;
+                    while ((array[w].row == i) && (w <= k))
+                    {
+                            if (array[w].row != array[w].col)
+                                sum += array[w].value * x0[array[w].col];
+                            
+                            else if (array[w].row == array[w].col)
+                                temp0 = array[w].value;
+                            w++;
+                    }
+                        x[i] =(b2[i] -sum) / double(temp0);
+                }
+                    /*
+                    for (int j = 1; j <= i-1; j++)
+                        sum -= find_value (array, i, j, k) * x[j];
+                    for (int j = i; j <= row_num; j++)
+                        sum -= find_value (array, i, j, k) * x0[j];
+                    x[i] = sum*1.5 / find_value (array, i, i, k)+x0[i];*/
+                
+                //精度判断
+                for (int i = 1; i <= row_num; i++)
+                {
+                    if (fabs (x[i] - x0[i]) >0.01)            //精度调整！！！！！！！！！！！
+                    {
+                        flag = 1;
+                        break;
+                    }
+                }
+                if (flag == 1)
+                    for (int i = 1; i <= row_num; i++)
+                    {
+                        x0[i] = x[i];
+                    }
+                else 
+                {
+                    for (int i = 1; i <= row_num; i++)
+                        cout << x[i] << " ";
+                    cout << endl;
+                    break;
+                }
+            }
+        
+            break;
+        }
+        
+    }
+}
+double find_value (vector<Trituple> array, int r, int c, int limit)   //find the value from 1 to limit, there is no need to search all the array
+{
+    for (int i = 1; i <= limit; i++)
+    {
+        if (array[i].col == c && array[i].row == r)
+            return array[i].value;
+        else if (array[i].col > c && array[i].row > r)
+            return 0;
+    }
+    return 0;
+}
+void exchange_row (double ** &matrix, int flag, int row)  //将含最大主元元素的行提到首行位置，这样可以检测主元位置是否为0，且能提高数值计算的精度
+{
+    int j;
+    double *temp;
+    for (j = flag + 1; j<row; j++)
+        if (fabs (matrix[flag][flag])<fabs (matrix[j][flag]))
+        {
+            temp = matrix[flag];
+            matrix[flag] = matrix[j];
+            matrix[j] = temp;
+        }
+}
+int guass_elimination (double ** &matrix, int row, int col)
+{
+    int result, i, p, k;
+    double mul;
+    for (i = 0; i<row; i++)
+    {
+        exchange_row (matrix, i, row);
+        if (fabs (matrix[i][i])<0.00001)  
+            continue;
+        for (p = i + 1; p<row; p++)
+        {
+            mul = matrix[p][i] / matrix[i][i];
+            for (k = i; k<row + 1; k++)
+                matrix[p][k] -= mul* matrix[i][k];
+        }
+    }
+    if (fabs (matrix[row - 1][row - 1])>0.00001)
+        result = 0;
+    else
+    {
+        if (fabs (matrix[row - 1][row])>0.00001)
+            result = -1;
+        else
+            result = 1;
+    }
+    return result;
+}

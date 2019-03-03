@@ -1,0 +1,197 @@
+#include<iostream>
+#include<queue>
+#include<vector>
+#include<stack>
+#include<cstring>
+#include<string>
+using namespace std;
+long long length=0;
+struct HNode
+{       //树结点的类定义
+    long long data;
+    HNode *parent;
+    HNode *leftChild, *rightChild;
+    char ch;
+    HNode () : data(0),parent (NULL), leftChild (NULL), rightChild (NULL)
+    {
+    }
+    HNode (long long elem, HNode *pr = NULL, HNode *left = NULL, HNode *right = NULL) : data (elem), parent (pr), leftChild (left), rightChild (right)
+    {
+    }
+};
+struct cmp
+{
+    bool operator() (HNode* &a, HNode* &b)
+    {
+        return a->data > b->data;
+    }
+};             //堆的定义, bug:struct??? a>b???  ok
+struct cmp1
+{
+    bool operator() (HNode* &a, HNode* &b)
+    {
+        return a->data < b->data;
+    }
+};             //堆的定义, bug:struct??? a>b???  ok
+struct cmp2
+{
+    bool operator() (HNode &a, HNode &b)
+    {
+        return a.data > b.data;
+    }
+};             //堆的定义, bug:struct??? a>b???  ok
+struct cmp3
+{
+    bool operator() (HNode &a, HNode &b)
+    {
+        return a.data < b.data;
+    }
+};             //堆的定义, bug:struct??? a>b???  ok
+typedef priority_queue<HNode*, vector<HNode*>, cmp> minHeap;  //get a priority_queue  ok
+typedef priority_queue<HNode*, vector<HNode*>, cmp1> maxHeap;  //get a priority_queue  ok
+typedef priority_queue<HNode, vector<HNode>, cmp2> minHeap0;  //get a priority_queue  ok
+typedef priority_queue<HNode, vector<HNode>, cmp3> maxHeap0;  //get a priority_queue  ok
+class HuffmanTree
+{
+public:
+    HuffmanTree (vector<HNode> NodeList, long long n);
+    ~HuffmanTree () { delete root; };
+    HNode *root;
+protected:
+    void deleteTree (HNode *t);
+    void mergeTree (HNode *t1, HNode *t2, HNode * parent);
+};
+char res[1000000];
+void dfs (HNode *root, int level)         //打印字符和对应的哈夫曼编码  
+{
+    if (root->leftChild == root->rightChild)        //叶子节点的左孩子地址一定等于右孩子地址，且一定都为NULL;叶子节点记录有字符  
+    {
+        if (level == 0)                   //“AAAAA”这种只有一字符的情况  
+        {
+            res[0] = '0';
+            level++;
+        }
+        res[level] = '\0';               //字符数组以'\0'结束  
+        //cout<<res<<endl;       ///////////!!!!!!!!!!!
+        length += strlen(res)*root->data;
+    }
+    else
+    {
+        res[level] = '0';                //左分支为0  
+        dfs (root->leftChild, level + 1);
+        res[level] = '1';                //右分支为1  
+        dfs (root->rightChild, level + 1);
+    }
+}
+//指针合并操作
+void HuffmanTree::mergeTree (HNode* bt1, HNode* bt2, HNode* parent)
+{
+    parent->leftChild = bt1;
+    parent->rightChild = bt2;
+    parent->data = bt1->data + bt2->data;
+    bt1->parent = parent;
+    bt2->parent = parent;
+};
+HuffmanTree::HuffmanTree (vector<HNode> NodeList, long long n)
+{
+    //给出 n 个权值w[1]～w[n], 构造Huffman树
+    minHeap hp; //最小堆存森林
+    HNode*  first,*second;     //？？？？  
+    HNode* lpar=NULL;
+    HNode s;
+    for (int i = 0; i < n; i++)
+    {
+        hp.push (&NodeList[i]); //every node插入到最小堆中
+    }
+    //ok
+    for (int i = 0; i < n - 1; i++)
+    {   //n-1趟, 建Huffman树
+        HNode * parent = new HNode;
+        first = hp.top ();//min data in heap
+        hp.pop ();      //选择根权值最小的树
+        second = hp.top ();
+        hp.pop ();  //选择根权值次小的树
+        mergeTree (first, second, parent);  //合并
+        hp.push (parent);       //重新插入到最小堆中
+        lpar = parent;
+    }
+    root = lpar;        //最后确立根结点
+    s = *hp.top ();
+    hp.pop ();
+    dfs (&s,0);
+};
+//非递归版遍历
+int main ()
+{
+    string mood;
+    long long N, num;
+    cin >> N;
+    vector<HNode> myvec;
+    HNode x;
+    for (int i = 0; i < N; i++)
+    {
+        cin >> num;
+        x.data = num;   //from 0 to n-1
+        x.leftChild = NULL;
+        x.rightChild = NULL;
+        x.parent = NULL;
+        myvec.push_back (x);
+    }
+    HuffmanTree MyHuff (myvec, N);
+    cout << length << endl;
+    cin >> mood;
+    if (mood == "BAD");
+    else if (mood == "GOOD")
+    {
+        long long q, times;
+        minHeap0 hp;
+        maxHeap0 hp1;
+        char flag;
+        cin >> q;
+        for (vector<HNode>::iterator i = myvec.begin(); i!=myvec.end(); i++)
+        {
+            hp.push (*i);   //every node插入到最小堆中
+        }
+        for (int i = 0; i < q; i++)
+        {
+            cin >> flag;
+            if (flag == 'D')
+            {
+                vector<HNode> myvec0;
+                while (!hp.empty ())
+                {
+                    myvec0.push_back (hp.top());
+                    hp.pop ();
+                };
+                myvec0.pop_back ();
+                for (int i = 0; i < myvec0.size(); i++)
+                {
+                    hp.push (myvec0[i]);    //every node插入到最小堆中
+                }
+            }
+            else if (flag == 'E')
+            {
+                if(!hp.empty())
+                hp.pop ();
+            }
+            else if (flag == 'A')
+            {
+                cin >> times;
+                x.data = times;
+                x.leftChild = NULL;
+                x.rightChild = NULL;
+                x.parent = NULL;
+                hp.push(x);
+            }
+        }
+    vector<HNode> myvec1;
+    while (!hp.empty ())
+    {
+        myvec1.push_back (hp.top ());
+        hp.pop ();
+    };
+    HuffmanTree MyHuff (myvec1, myvec1.size());
+    }
+    //PreOrder (MyHuff.root);
+    
+}

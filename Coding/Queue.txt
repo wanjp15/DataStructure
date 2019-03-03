@@ -1,0 +1,387 @@
+#include <cstdio>
+#include <cstdlib>
+#include <iostream>
+#include<string>
+#include<deque>
+#include<stack>
+using namespace std;
+int main ()
+{
+    int input_num, opertype,record[500000],x,m=0;
+    char input_char,record_char[500000];
+    cin >> input_num;
+    deque<char> save_queue;
+    for (int i = 0; i < input_num; i++)
+    {
+        cin >> record[i];
+        if (record[i] == 1 || record[i] == 2)
+            cin >> record_char[i];
+        else if (record[i] == 3 || record[i] == 4)
+        {
+            m = 1;
+        }
+    }
+    if (m == 1)
+        goto planB;
+    for (int i = 0; i < input_num; i++)
+    {
+        opertype=record[i];
+        if (opertype == 1)
+        {
+            input_char = record_char[i];
+            if (save_queue.empty ())
+                save_queue.push_back (input_char);
+            else
+            {
+                if (input_char == '(' || input_char == '[' || input_char == '{' || input_char == '<')
+                    save_queue.push_back (input_char);
+                else if (input_char == ')')
+                {
+                    if (save_queue.back () == '(')
+                        save_queue.pop_back ();
+                    else
+                        save_queue.push_back (input_char);
+                }
+                else if (input_char == ']')
+                {
+                    if (save_queue.back () == '[')
+                        save_queue.pop_back ();
+                    else
+                        save_queue.push_back (input_char);
+                }
+                else if (input_char == '}')
+                {
+                    if (save_queue.back () == '{')
+                        save_queue.pop_back ();
+                    else
+                        save_queue.push_back (input_char);
+                }
+                else if (input_char == '>')
+                {
+                    if (save_queue.back () == '<')
+                        save_queue.pop_back ();
+                    else
+                        save_queue.push_back (input_char);
+                }
+            }
+            if (save_queue.size () == 0)
+                cout << "1" << endl;
+            else
+                cout << "0" << endl;
+        }
+        if (opertype == 2)
+        {
+            input_char = record_char[i];
+            if (save_queue.empty ())
+                save_queue.push_front (input_char);
+            else
+            {
+                if (input_char == ')' || input_char == ']' || input_char == '}' || input_char == '>')
+                    save_queue.push_front (input_char);
+                else if (input_char == '(')
+                {
+                    if (save_queue.front () == ')')
+                        save_queue.pop_front ();
+                    else
+                        save_queue.push_front (input_char);
+                }
+                else if (input_char == '[')
+                {
+                    if (save_queue.front () == ']')
+                        save_queue.pop_front ();
+                    else
+                        save_queue.push_front (input_char);
+                }
+                else if (input_char == '{')
+                {
+                    if (save_queue.front () == '}')
+                        save_queue.pop_front ();
+                    else
+                        save_queue.push_front (input_char);
+                }
+                else if (input_char == '<')
+                {
+                    if (save_queue.front () == '>')
+                        save_queue.pop_front ();
+                    else
+                        save_queue.push_front (input_char);
+                }
+            }
+            if (save_queue.size () == 0)
+                cout << "1" << endl;
+            else
+                cout << "0" << endl;
+        }
+    }
+    return 0;
+planB:
+    for (int i = 0; i < input_num; i++)
+    {
+        int flag = 0;
+        opertype=record[i];
+        if (opertype == 1)
+        {
+            input_char=record_char[i];
+            save_queue.push_back (input_char);
+            stack<char> judge_stack;
+            judge_stack.push ('a');
+            for (int i = 0; i<save_queue.size (); i++)
+            {
+                if (save_queue[i] == '(' || save_queue[i] == '[' || save_queue[i] == '{' || save_queue[i] == '<')
+                {
+                    judge_stack.push (save_queue[i]);
+                }
+                else if (save_queue[i] == ')')
+                {
+                    if (judge_stack.top () == '(')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == ']')
+                {
+                    if (judge_stack.top () == '[')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '}')
+                {
+                    if (judge_stack.top () == '{')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '>')
+                {
+                    if (judge_stack.top () == '<')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+            }
+            if (flag == 1);
+            else
+            {
+                if (judge_stack.size () == 1)
+                    cout << "1" << endl;
+                else
+                    cout << "0" << endl;
+            }
+        }
+        else if (opertype == 2)
+        {
+            input_char = record_char[i];
+            save_queue.push_front (input_char);
+            stack<char> judge_stack;
+            judge_stack.push ('a');
+            for (int i = 0; i<save_queue.size (); i++)
+            {
+                if (save_queue[i] == '(' || save_queue[i] == '[' || save_queue[i] == '{' || save_queue[i] == '<')
+                {
+                    judge_stack.push (save_queue[i]);
+                }
+                else if (save_queue[i] == ')')
+                {
+                    if (judge_stack.top () == '(')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == ']')
+                {
+                    if (judge_stack.top () == '[')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '}')
+                {
+                    if (judge_stack.top () == '{')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '>')
+                {
+                    if (judge_stack.top () == '<')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+            }
+            if (flag == 1);
+            else
+            {
+                if (judge_stack.size () == 1)
+                    cout << "1" << endl;
+                else
+                    cout << "0" << endl;
+            }
+        }
+        else if (opertype == 3)
+        {
+            save_queue.pop_back ();
+            stack<char> judge_stack;
+            judge_stack.push ('a');
+            for (int i = 0; i<save_queue.size (); i++)
+            {
+                if (save_queue[i] == '(' || save_queue[i] == '[' || save_queue[i] == '{' || save_queue[i] == '<')
+                {
+                    judge_stack.push (save_queue[i]);
+                }
+                else if (save_queue[i] == ')')
+                {
+                    if (judge_stack.top () == '(')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == ']')
+                {
+                    if (judge_stack.top () == '[')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '}')
+                {
+                    if (judge_stack.top () == '{')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '>')
+                {
+                    if (judge_stack.top () == '<')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+            }
+            if (flag == 1);
+            else
+            {
+                if (judge_stack.size () == 1)
+                    cout << "1" << endl;
+                else
+                    cout << "0" << endl;
+            }
+        }
+        else if (opertype == 4)
+        {
+            save_queue.pop_front ();
+            stack<char> judge_stack;
+            judge_stack.push ('a');
+            for (int i = 0; i<save_queue.size (); i++)
+            {
+                if (save_queue[i] == '(' || save_queue[i] == '[' || save_queue[i] == '{' || save_queue[i] == '<')
+                {
+                    judge_stack.push (save_queue[i]);
+                }
+                else if (save_queue[i] == ')')
+                {
+                    if (judge_stack.top () == '(')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == ']')
+                {
+                    if (judge_stack.top () == '[')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '}')
+                {
+                    if (judge_stack.top () == '{')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+                else if (save_queue[i] == '>')
+                {
+                    if (judge_stack.top () == '<')
+                        judge_stack.pop ();
+                    else
+                    {
+                        cout << "0" << endl;
+                        flag = 1;
+                        break;
+                    }
+                }
+            }
+            if (flag == 1);
+            else
+            {
+                if (judge_stack.size () == 1)
+                    cout << "1" << endl;
+                else
+                    cout << "0" << endl;
+            }
+        }
+    }
+    
+    return 0;
+}

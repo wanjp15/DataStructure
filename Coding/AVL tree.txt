@@ -1,0 +1,632 @@
+#include<iostream>
+#include<queue>
+#include<stack>
+#include<assert.h>
+using namespace std;
+//二叉搜索树结点类
+struct BSTNode
+{           
+    int bf,ln;
+    long data;                  //数据域
+    BSTNode *left, *right;  //左子女和右子女
+    BSTNode () { left = NULL; right = NULL; bf = 0; ln = 0; }       //构造函数
+    BSTNode (const long d, BSTNode *L = NULL,BSTNode *R = NULL)
+    {
+        data = d; left = L; right = R; bf = 0; ln = 0;
+    }      //构造函数
+    ~BSTNode () {}              //析构函数
+    void setData (long d) { data = d; } //修改    
+    long getData () { return data; }        //提取
+    bool operator < (const long& x)     //重载：判小于
+    {
+        return data < x;
+    }
+    bool operator > (const long& x)     //重载：判大于
+    {
+        return data > x;
+    }
+    bool operator == (const long& x)    //重载：判等于
+    {
+        return data == x;
+    }
+};
+//最小堆
+/*
+struct cmp
+{
+    bool operator() (BSTNode &a, BSTNode &b)
+    {
+        return a.data > b.data;
+    }
+};             //堆的定义, bug:struct??? a>b???  ok
+typedef priority_queue<BSTNode, vector<BSTNode>, cmp> minHeap;  //get a priority_queue  ok
+*/
+class BST
+{                 //二叉搜索树类定义
+public:
+    BSTNode *root;  //根指针
+    BST () { root = NULL; }   //构造函数
+    BST (long value);             //构造函数 建立一棵二叉搜索树
+    ~BST () {};           //析构函数
+    bool Search (const long x)  //搜索 
+    {
+        return ((Search(x, root) != NULL)?true:false);
+    }
+    BST& operator = (const BST& R);//重载：赋值
+    void makeEmpty ()           //置空
+    {
+        makeEmpty (root); root = NULL;
+    }
+    BSTNode* Search (const long x, BSTNode *ptr);  //递归：搜索
+    void PrintTree () const { PrintTree (root); }    //输出
+    long Min () { return Min (root)->data; }     //求最小
+    long Max () { return Max (root)->data; }     //求最大
+    bool Insert (const long& e1)                //插入新元素
+    {
+        return Insert (e1, root);
+    }
+    bool Remove (const long x) { return Remove (x, root); }       //删除含x的结点
+    void RotateL (BSTNode*& ptr);     //左单旋
+    void RotateR (BSTNode*& ptr);     //右单旋
+    void RotateLR (BSTNode*& ptr);      //先左后右双旋
+    void RotateRL (BSTNode*& ptr);      //先右后左双旋
+private:
+    long RefValue;          //输入停止标志
+    void makeEmpty (BSTNode *& ptr);    //递归：置空
+    void PrintTree (BSTNode *ptr) const;    //递归：打印
+    BSTNode *Copy (const BSTNode *ptr);   //递归：复制
+    BSTNode* Min (BSTNode* ptr);    //递归：求最小
+    BSTNode* Max (BSTNode* ptr);    //递归：求最大
+    bool Insert (const long& e1, BSTNode*& ptr);//递归：插入
+    bool Remove (const long x, BSTNode*& ptr);//递归：删除
+};
+void BST::RotateL (BSTNode *& ptr)
+{
+    //右子树比左子树高: 做左单旋转后新根在ptr
+    BSTNode *subL = ptr; //原根结点A旋转后为左子树根
+    ptr = subL->right;                    //旋转后的根结点C
+    subL->right = ptr->left;  //D位置发生变化，由C左变A右
+    ptr->left = subL;              //修改C的左指针域
+    ptr->bf = subL->bf = 0;  //修改A 和 C的平衡因子
+    ptr->ln += subL->ln+1;
+};
+void BST::RotateR (BSTNode *& ptr)
+{
+    //左子树比右子树高, 旋转后新根在ptr
+    BSTNode *subR = ptr;   //要右旋转的结点
+    ptr = subR->left;
+    subR->left = ptr->right;          //转移ptr右边负载
+    ptr->right = subR;            //ptr成为新根
+    ptr->bf = subR->bf = 0;
+    subR->ln -=ptr->ln + 1;
+};   //与左单旋转操作完全对称
+void BST::RotateLR (BSTNode *& ptr)
+{
+    BSTNode *subR = ptr; //原根结点A旋转后为右子树根
+    BSTNode *subL = subR->left; //左子树根结点未变
+    ptr = subL->right;            //旋转后的根结点E
+    subL->right = ptr->left;  //F位置发生变化，由E左变B右
+    ptr->left = subL;              //修改E的左指针域
+    if (ptr->bf <= 0) subL->bf = 0;  //视E结点原bf修改
+    else subL->bf = -1;  //对应插入在E结点的右子树的情形
+    subR->left = ptr->right;  //G结点位置变化，由E右变A左
+    ptr->right = subR;      //修改E的右指针域
+    if (ptr->bf == -1) subR->bf = 1; //视E结点原bf修改
+    else subR->bf = 0;
+    ptr->bf = 0;      //旋转后新根结点的bf为0
+    subR->ln -= 2 + ptr->ln+ subL->ln;
+    ptr->ln += 1 + subL->ln;
+};
+void BST::RotateRL (BSTNode *& ptr)
+{
+    BSTNode *subL = ptr;
+    BSTNode *subR = subL->right;
+    ptr = subR->left;
+    subR->left = ptr->right;
+    ptr->right = subR;
+    if (ptr->bf >= 0) subR->bf = 0;
+    else subR->bf = 1;
+    subL->right = ptr->left;
+    ptr->left = subL;
+    if (ptr->bf == 1) subL->bf = -1;
+    else subL->bf = 0;
+    ptr->bf = 0;
+    subR->ln -= 1 + ptr->ln;
+    ptr->ln += subL->ln + 1;
+};
+BSTNode* BST::Search (const long x, BSTNode *ptr)
+{
+    //非递归函数：作为对比，在当前以ptr为根的二叉搜索树中搜索含x的结点。//若找到，则函数返回该结点的地址，否则函数返回NULL值。
+    if (ptr == NULL) return NULL;
+    BSTNode* temp = ptr;
+    while (temp != NULL)
+    {
+        if (x == temp->data) return temp;
+        if (x < temp->data) temp = temp->left;
+        else temp = temp->right;
+    }
+    return NULL;
+};
+//error
+/*
+bool BST::Insert (const long& e1,BSTNode *& ptr)
+{
+    BSTNode *pr=NULL,*p=ptr,*q;
+    int d;
+    stack<BSTNode*>st;
+    while (p != NULL)
+    {
+        pr = p;
+        st.push (pr);
+        if (e1 < p->data)p = p->left;
+        else
+            p = p->right;
+    }
+    p = new BSTNode (e1);
+    if (pr == NULL) { ptr = p; return true; }
+    if (e1 < pr->data)pr->left = p;
+    else pr->right = p;
+    while (st.empty () == false)
+    {
+        pr=st.top ();
+        st.pop ();
+        if (p == pr->left)pr->bf--;
+        else pr->bf++;
+        if (pr->bf == 0)break;
+        if (pr->bf == 1 || pr->bf == -1)
+            p = pr;
+        else
+        {
+            d = (pr->bf < 0) ? -1 : 1;
+            if (p->bf == d)
+            {
+                if (d == -1)RotateR (pr);
+                else RotateL (pr);
+            }
+            else
+            {
+                if (d == -1)RotateLR (pr);
+                else RotateRL (pr);
+            }
+            break;
+        }
+    }
+    if (st.empty () == true)ptr = pr;
+    else 
+    {
+        q = st.top ();
+        if (q->data > pr->data)q->left = pr;
+        else q->right = pr;
+    }
+    return true;
+};
+*/
+/*                    
+bool BST::Remove (const long x,BSTNode *& ptr)
+{
+    //在以 ptr 为根的二叉搜索树中删除含 x 的结点
+    BSTNode*pr = NULL, *p = ptr, *q, *ppr=NULL;
+    int d, dd = 0;
+    stack<BSTNode*> st;
+    while (p != NULL)
+    {
+        if (x == p->data)break;
+        pr = p; st.push (pr);
+        if (x < p->data)p = p->left;
+        else p = p->right;
+    }
+    if (p == NULL)return false;
+    if (p->left != NULL&&p->right != NULL)
+    {
+        pr = p; st.push (pr);
+        q = p->left;
+        while (q->right != NULL)
+        {
+            pr = q;
+            st.push (pr);
+            q = q->right;
+        }
+        p->data = q->data;
+        p = q;
+    }
+    if (p->left != NULL)
+        q = p->left;
+    else q = p->right;
+    if (pr == NULL)ptr = q;
+    else
+    {
+        if (pr->left == p)pr->left = q;
+        else pr->right = q;
+        while (!st.empty ())
+        {
+            pr=st.top ();
+            st.pop ();
+            if (pr->right == q)pr->bf--;
+            else pr->bf++;
+            if (!st.empty ())
+            {
+                ppr = st.top ();
+                dd = (ppr->left == pr) ? -1:1 ;
+            }
+            else dd = 0;
+            if (pr->bf == 1 || pr->bf == -1)break;
+            if (pr->bf != 0)
+            {
+                if (pr->bf < 0)
+                {
+                    d = -1; q = pr->left;
+                }
+                else { d = 1; q = pr->right; }
+                if (q!=NULL&&q->bf == 0)
+                {
+                    if (d == -1)
+                    {
+                        RotateR (pr); pr->bf = 1; pr->left->bf = -1;
+                    }
+                    else { RotateL (pr); pr->bf = -1; pr->right->bf = 1; }
+                    break;
+                }
+                if (q != NULL&&q->bf == d)
+                {
+                    if (d == -1)RotateR (pr);
+                    else RotateL (pr);
+                }
+                else { if (d == -1)RotateLR (pr); else RotateRL (pr); }
+                if (dd == -1)ppr->left = pr;
+                else if (dd == 1)ppr->right = pr;
+            }
+            q = pr;
+        }
+        if (st.empty ())ptr = pr;
+    }
+    delete p;
+    return true;
+};
+*/
+//runtime
+bool BST::Insert(const long& val, BSTNode *&t)
+{
+    BSTNode *tmp = t;
+    BSTNode *pre_tmp = NULL;
+    stack<BSTNode* > st;   //用栈来保存路径，当插入元素后，通过出栈回溯，平衡化祖先节点  
+    int lable;              //标签  
+    while (tmp != NULL)
+    {     //首先查找要插入的地方  
+        pre_tmp = tmp;
+        st.push (pre_tmp);
+        if (val == tmp->data)
+            return false;
+        else if (val < tmp->data)
+        {
+            tmp->ln++;
+            tmp = tmp->left;
+        }
+        else
+            tmp = tmp->right;
+    }
+    tmp = new BSTNode (val);      //新节点生成  
+    if (t == NULL)
+    {              //如果t为空，根节点  
+        t = tmp;
+    }
+    else
+    {
+        if (tmp->data < pre_tmp->data)
+        {         //左子树  
+            pre_tmp->left = tmp;
+        }
+        else
+        {
+            pre_tmp->right = tmp;             //右子树  
+        }
+        while (!st.empty ())
+        {
+            pre_tmp = st.top ();
+            st.pop ();
+            if (pre_tmp->left == tmp)
+                pre_tmp->bf--;                    //平衡因子-1  
+            else
+                pre_tmp->bf++;                    //平衡因子+1  
+            if (pre_tmp->bf == 0)
+                break;
+            else if (pre_tmp->bf == -1 || pre_tmp->bf == 1)
+                tmp = pre_tmp;
+            else
+            {
+                lable = pre_tmp->bf > 0 ? 1 : -1;     //标签，用来记录父节点平衡因子符号  
+                if (tmp->bf == lable)
+                {       //same symbol，同号，单旋转  
+                    if (lable == 1)
+                    {      //(L -- \)             
+                        RotateL (pre_tmp);
+                    }
+                    else
+                    {                //(R -- /)  
+                        RotateR (pre_tmp);
+                    }
+                }
+                else
+                {
+                    if (lable == -1)
+                    {     //(LR -- <)       //不同号，双旋转  
+                        RotateLR (pre_tmp);
+                    }
+                    else
+                    {                //(RL -- >)  
+                        RotateRL (pre_tmp);
+                    }
+                }
+                break;            //!!! don't forget!   由于修改后已经平衡，必须break，否则会继续回溯，可能导致segmentation fault  
+            }
+        }
+        if (st.empty ())
+            t = pre_tmp;        //如果栈空，即位头节点  
+        else
+        {                   //不空，链接  
+            BSTNode* pre_tmp_ = st.top ();
+            if (pre_tmp->data < pre_tmp_->data)
+                pre_tmp_->left = pre_tmp;
+            else
+                pre_tmp_->right = pre_tmp;
+        }
+    }
+    return true;
+}
+bool BST::Remove (const long val, BSTNode *&t)
+{
+    assert (t != NULL);
+    BSTNode *tmp = t;
+    BSTNode *pre_tmp = NULL;
+    BSTNode *ppre_tmp = NULL;
+    BSTNode *it_tmp = NULL;
+    stack<BSTNode*> st;
+    int sign, lable;    //符号标记  
+    int flag = 0;       //子树标记
+    while (tmp != NULL)
+    {
+        if (tmp->data == val)       //找到跳出循环  
+            break;
+        pre_tmp = tmp;
+        st.push (pre_tmp);
+        if (tmp->data > val)
+        {
+            tmp->ln--;
+            tmp = tmp->left;
+        }
+        else
+            tmp = tmp->right;
+    }
+    if (tmp == NULL)               //未找到，返回  
+        return false;
+    else if (tmp->left != NULL && tmp->right != NULL)  ////////////////////
+    {
+        pre_tmp = tmp;               //将有两个孩子的节点转化为只有一个孩子的节点，方法是寻找它中序遍历的直接前驱或后继  
+        st.push (pre_tmp);
+        it_tmp = tmp->left;
+        while (it_tmp->right != NULL)        //找到左子树的中序最后一个结点
+        {
+            pre_tmp = it_tmp;
+            st.push (pre_tmp);
+            it_tmp = it_tmp->right;
+        }
+        tmp->data = it_tmp->data;      //覆盖要删除的节点value  
+        tmp->ln--;
+        tmp = it_tmp;                      //tmp指向要删除的节点，函数结束前会delete tmp  
+        
+    }
+    if (tmp->left != NULL)
+    {        //这样的判断方式会导致删除一个节点下两个没有孩子节点的节点时，由于左孩子均为空，直接跳入else  
+        it_tmp = tmp->left;
+    }
+    else
+    {
+        it_tmp = tmp->right;
+    }
+    if (pre_tmp == NULL)
+        t = it_tmp;
+    else
+    {
+        if (pre_tmp->left == tmp)
+        {   //上面直接跳入else，但我们在此处加上flag，用来识别它到底是pre_tmp的左孩子还是右孩子。  
+            flag = 0;
+            pre_tmp->left = it_tmp;
+        }
+        else
+        {
+            flag = 1;
+            pre_tmp->right = it_tmp;
+        }
+        while (!st.empty ())
+        {
+            pre_tmp = st.top ();
+            st.pop ();
+            if (pre_tmp->left == it_tmp && flag == 0)//此处flag=0，防止pre_tmp的左孩子为空，右孩子同样为空，直接进入else  
+                pre_tmp->bf++;
+            else
+                pre_tmp->bf--;
+            if (!st.empty ())
+            {
+                ppre_tmp = st.top ();
+                if (ppre_tmp->left== pre_tmp)
+                {
+                    sign = -1;      //sign用来识别是祖父节点的左孩子还是右孩子，下文链接会用上  
+                    flag = 0;
+                }
+                else
+                {
+                    sign = 1;
+                    flag = 1;
+                }
+            }
+            else
+                sign = 0;    //栈空，它的祖先节点不存在，pre_tmp即为根节点，但是这里也要写上，否则sign的值会遗留下来  
+            if (pre_tmp->bf == -1 || pre_tmp->bf == 1)
+                break;           //已经平衡，直接跳出  
+            if (pre_tmp->bf != 0)
+            {      //m_bf为+2/-2  
+                if (pre_tmp->bf < 0)
+                {
+                    lable = -1;          //lable表示父节点符号，下面会用来区分同号异号  
+                    it_tmp = pre_tmp->left;
+                }
+                else
+                {
+                    lable = 1;
+                    it_tmp = pre_tmp->right;
+                }
+                if (it_tmp->bf == 0)
+                {       //pre_tmp的较高子树的头节点m_bf为0  
+                    if (lable == -1)
+                    {
+                        RotateR (pre_tmp);
+                        pre_tmp->bf = 1;
+                        pre_tmp->right->bf = -1;
+                    }
+                    else
+                    {
+                        RotateL (pre_tmp);
+                        pre_tmp->bf = -1;
+                        pre_tmp->left->bf = 1;
+                    }
+                    break;           //直接跳出，并没有链接，需要下文写上链接  
+                }
+                if (it_tmp->bf == lable)
+                {       //同号   
+                    lable == 1 ? RotateL (pre_tmp) : RotateR (pre_tmp);
+                }
+                else
+                {                            //异号  
+                    lable == -1 ? RotateLR (pre_tmp): RotateRL (pre_tmp);
+                }
+                //sign == -1 ? ppre_tmp->left_child = pre_tmp                //不能写成这样，因为sign值可能为0，会直接进入后者  
+                //                      : ppre_tmp->right_child = pre_tmp;   //!!!!! sign maybe 0 ! not only1 or -1 !!! warning!  
+                if (sign == -1)
+                    ppre_tmp->left= pre_tmp;
+                else if (sign == 1)            //else if正确方式  
+                    ppre_tmp->right = pre_tmp;
+            }
+            it_tmp = pre_tmp;       //回溯  
+        }
+        if (st.empty ())              //栈为空，根节点  
+            t = pre_tmp;
+        else
+        {             //这一段else参考书上没有，书是错的，如果不写此处，290break直接跳出while循环，会导致链接不上，数据丢失  
+            ppre_tmp = st.top ();
+            if (ppre_tmp->data > pre_tmp->data)
+                ppre_tmp->left = pre_tmp;
+            else
+                ppre_tmp->right = pre_tmp;
+        }
+    }
+    delete tmp;
+    tmp = NULL;
+    return true;
+}
+long size (BSTNode* N)  //子树的结点数目
+{
+    if (N == NULL)
+        return 0;
+    else
+        return size (N->left) + size (N->right) + 1;
+}
+long k_min (long k, BSTNode* T)
+{
+    long t_size = T->ln;
+    if (T == NULL)
+    {
+        return NULL;
+    }
+    else if (t_size > k-1)
+        return k_min (k, T->left);
+    else if (t_size < k-1)
+        return k_min (k - 1 - t_size, T->right);
+    else if (t_size == k-1)
+        return T->data;
+}
+long k_rank (long k, BSTNode* T)
+{
+    long t_size = T->ln;
+    if (T->data == k)
+        return t_size+1;
+    else if (k < T->data)
+        return k_rank (k, T->left);
+    else if (k > T->data)
+        return t_size+k_rank (k, T->right)+1;
+}
+long kthSmallest (BSTNode* root, int k)
+{
+    if (root == NULL || k < 1) return NULL;
+    int cnt = root->ln;
+    if (k <= cnt)
+        return kthSmallest (root->left, k);
+    else if (k > cnt + 1)
+        return kthSmallest (root->right, k - 1 - cnt);
+        return root->data;
+}
+//中序遍历 runtime
+/*
+long kthSmallest (BSTNode* root, int k)
+{
+    long od = 0;
+    stack<BSTNode*> s;
+    BSTNode *p = root;
+    while (p || !s.empty ())
+    {
+        while (p)
+        {
+            s.push (p);
+            p = p->left;
+        }
+        p = s.top ();
+        s.pop ();
+        ++od;
+        if (od == k) return p->data;
+        p = p->right;
+    }
+    return 0;
+}
+*/
+//前序遍历+递归 runtime
+/*
+void Inorder (BSTNode *T,minHeap& x)
+{
+    if (T)
+    {
+        Inorder (T->left,x);
+        x.push (BSTNode (T->data));
+        Inorder (T->right,x);
+    }
+    
+}
+*/
+int main ()
+{
+    int N,oper_num;
+    char flag;
+    cin >> N;
+    BST mytree;
+    for (int i = 0; i < N; i++)
+    {
+        cin >> flag;
+        if (flag == 'I')
+        {
+            cin >> oper_num;
+            mytree.Insert (oper_num);
+        }
+        else if (flag == 'D')
+        {
+            cin >> oper_num;
+            mytree.Remove (oper_num);
+        }
+        else if (flag == 'Q')
+        {
+            cin >> oper_num;
+            cout<< kthSmallest (mytree.root, oper_num)<<endl;
+        }
+        else if (flag == 'S')
+        {
+            cin >> oper_num;
+            cout << k_rank (oper_num, mytree.root) << endl;
+        }
+    }
+}

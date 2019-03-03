@@ -1,0 +1,67 @@
+#include<iostream>
+#include<vector>
+#include<string>
+using namespace std;
+int fastFind (string& pat, string& tar, int k, int *next)   //串扫描时posP=0开始
+{
+    int posP = 0, posT = k,lengthP = pat.length (), lengthT = tar.length ();
+    while (posP < lengthP && posT < lengthT)
+    {
+        if (posP == -1 || pat[posP] == tar[posT])
+        {
+            posP++;  posT++;
+        }          //对应字符匹配
+        else posP = next[posP];
+    }//求pat下趟比较位置
+    if (posP < lengthP) 
+        return -1;  //匹配失败
+    else 
+        return posT - lengthP;     //匹配成功
+};
+void getNext (string& pat, int *next)
+{
+    int j = 0, k = -1, lengthP = pat.length ();
+    next[0] = -1;
+    while (j < lengthP)         //计算next[j]
+    {
+        if (k == -1 || pat[j] == pat[k])
+        {
+            j++;
+            k++;                  //先比较 后增值
+            next[j] = k;
+        }
+        else
+            k = next[k];
+    }
+};
+int main ()
+{
+    int web_num, key_num, *next, flag, a[5000];
+    cin >> web_num >> key_num;
+    string str_temp;
+    vector<string> vec_tar (web_num + 5);
+    vector<string> vec_pat (key_num + 5);
+    for (int i = 1; i <= web_num; i++)     //bug
+    {
+        cin >> vec_tar[i];
+    }
+    for (int i = 1; i <= key_num; i++)
+    {
+        cin >> vec_pat[i];
+    }
+    //KMP process
+    for (int i = 1; i <= key_num; i++)
+    {
+        next = a;
+        //next = new int (vec_pat[i].length ()-1);   //checkpoint!  Critical error detected c0000374 ，一般为数组越界赋值
+        getNext (vec_pat[i], next);
+        for (int j = 1; j <= web_num; j++)
+        {
+            flag = fastFind (vec_pat[i], vec_tar[j], 0, next);
+            if (flag != -1)
+                cout << j << " ";
+        }
+        cout << endl;
+        //delete next-> heap corruption!!!!!!
+    }
+}
